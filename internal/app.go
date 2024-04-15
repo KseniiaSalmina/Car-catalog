@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/sirupsen/logrus"
 	"os/signal"
 	"syscall"
 	"time"
@@ -18,7 +18,7 @@ import (
 
 type Application struct {
 	cfg          config.Application
-	logger       *logger.Logger
+	logger       *logrus.Logger
 	db           *postgres.DB
 	dbManager    *database_manager.PostgresManager
 	infoReceiver *info_receiver.Receiver
@@ -78,36 +78,36 @@ func (a *Application) initDatabase() error {
 
 	db, err := postgres.NewDB(ctx, a.cfg.Postgres)
 	if err != nil {
-		a.logger.Logger.WithError(err).Error("failed to init database")
+		a.logger.WithError(err).Error("failed to init database")
 		return err
 	}
 
 	a.db = db
-	a.logger.Logger.Info("successful connection to database")
+	a.logger.Info("successful connection to database")
 	return nil
 }
 
 func (a *Application) initDbManager() {
 	dbManager := database_manager.NewPostgresManager(a.db)
 	a.dbManager = dbManager
-	a.logger.Logger.Debug("successful init db manager")
+	a.logger.Debug("successful init db manager")
 }
 
 func (a *Application) initInfoReceiver() {
 	infoReceiver := info_receiver.NewReceiver(a.cfg.Receiver)
 	a.infoReceiver = infoReceiver
-	a.logger.Logger.Debug("successful init info receiver")
+	a.logger.Debug("successful init info receiver")
 }
 
 func (a *Application) initServer() {
 	s := api.NewServer(a.cfg.Server, a.dbManager, a.infoReceiver, a.logger)
 	a.server = s
-	a.logger.Logger.Debug("successful init server")
+	a.logger.Debug("successful init server")
 }
 
 func (a *Application) Run() {
 	defer a.stop()
-	a.logger.Logger.Debug("application started")
+	a.logger.Debug("application started")
 
 	a.server.Run()
 
@@ -117,13 +117,13 @@ func (a *Application) Run() {
 
 func (a *Application) stop() {
 	if err := a.server.Shutdown(); err != nil {
-		log.Printf("incorrect closing of server: %s", err.Error()) // TODO: logger
+		a.logger.Errorf("incorrect closing of server: %s", err.Error())
 	} else {
-		log.Print("server closed") // TODO: logger
+		a.logger.Info("server closed")
 	}
 
 	a.db.Close()
-	log.Print("database closed") // TODO: logger
+	a.logger.Info("database closed")
 }
 
 func (a *Application) readyToShutdown() {
