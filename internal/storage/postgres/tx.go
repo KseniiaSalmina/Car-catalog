@@ -26,21 +26,55 @@ func (t *Transaction) Rollback(ctx context.Context) error {
 
 func (t *Transaction) DeleteCar(ctx context.Context, num string) error {
 	var personID pgtype.Int8
-	if err := t.tx.QueryRow(ctx, `SELECT owner_id FROM cars WHERE reg_num = $1`, num).Scan(&personID); err != nil {
+	if err := t.tx.QueryRow(ctx, `DELETE FROM cars WHERE reg_num = $1 RETURNING owner_id`, num).Scan(&personID); err != nil {
 		return fmt.Errorf("failed to get owner id: %w", err)
 	}
 
-	if _, err := t.tx.Exec(ctx, `DELETE FROM persons WHERE id = $1`, personID.Int64); err != nil {
+	if err := t.deletePersonWithoutCars(ctx, personID.Int64); err != nil {
 		return fmt.Errorf("failed to delete car: %w", err)
 	}
 
 	return nil
 }
 
+func (t *Transaction) deletePersonWithoutCars(ctx context.Context, personID int64) error {
+	var ownersCarsAmount pgtype.Int8
+	if err := t.tx.QueryRow(ctx, `SELECT COUNT(*) FROM cars WHERE owner_id = $1`, personID).Scan(&ownersCarsAmount); err != nil {
+		return fmt.Errorf("failed to count owners cars: %w", err)
+	}
+
+	if ownersCarsAmount.Int64 == 0 {
+		if _, err := t.tx.Exec(ctx, `DELETE FROM persons WHERE id = $1`, personID); err != nil {
+			return fmt.Errorf("failed to delete person: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func (t *Transaction) ChangeCar(ctx context.Context, car models.Car) error {
+	var isCarExist pgtype.Int8
+	if err := t.tx.QueryRow(ctx, `SELECT COUNT(*) FROM cars WHERE reg_num=$1`, car.RegNum).Scan(&isCarExist); err != nil {
+		return fmt.Errorf("failed to change car: %w", err)
+	}
+	if isCarExist.Int64 == 0 {
+		return errors.New("car with this number does not exist")
+	}
+
 	ownerID, err := t.findOrCreatePerson(ctx, car.Owner)
 	if err != nil {
 		return fmt.Errorf("failed to change car: %w", err)
+	}
+
+	var oldOwnerID pgtype.Int8
+	if err := t.tx.QueryRow(ctx, `SELECT owner_id FROM cars WHERE reg_num=$1`, car.RegNum).Scan(&oldOwnerID); err != nil {
+		return fmt.Errorf("failed to change car: %w", err)
+	}
+
+	if int(oldOwnerID.Int64) != ownerID {
+		if err := t.deletePersonWithoutCars(ctx, oldOwnerID.Int64); err != nil {
+			return fmt.Errorf("failed to change car: %w", err)
+		}
 	}
 
 	if _, err := t.tx.Exec(ctx, `UPDATE cars SET mark=$1, model=$2, year=$3, owner_id=$4 WHERE reg_num=$5`, car.Mark, car.Model, car.Year, ownerID, car.RegNum); err != nil {
@@ -70,8 +104,14 @@ func (t *Transaction) findOrCreatePerson(ctx context.Context, person models.Pers
 
 func (t *Transaction) personID(ctx context.Context, person models.Person) (int, error) {
 	var personID pgtype.Int8
-	if err := t.tx.QueryRow(ctx, `SELECT owner_id FROM persons WHERE name = $1 AND surname =$2 AND patronymic =$3`, person.Name, person.Surname, person.Patronymic).Scan(&personID); err != nil {
-		return 0, fmt.Errorf("failed to get owner id: %w", err)
+	if person.Patronymic == "" {
+		if err := t.tx.QueryRow(ctx, `SELECT id FROM persons WHERE name = $1 AND surname =$2 AND patronymic IS NULL`, person.Name, person.Surname).Scan(&personID); err != nil {
+			return 0, fmt.Errorf("failed to get owner id: %w", err)
+		}
+	} else {
+		if err := t.tx.QueryRow(ctx, `SELECT id FROM persons WHERE name = $1 AND surname =$2 AND patronymic =$3`, person.Name, person.Surname, person.Patronymic).Scan(&personID); err != nil {
+			return 0, fmt.Errorf("failed to get owner id: %w", err)
+		}
 	}
 
 	return int(personID.Int64), nil
@@ -85,7 +125,7 @@ func (t *Transaction) newPerson(ctx context.Context, person models.Person) (int,
 			return 0, fmt.Errorf("failed to create person: %w", err)
 		}
 	} else {
-		if err := t.tx.QueryRow(ctx, `INSERT INTO persons (name, surname, patronymics) VALUES ($1, $2, $3) RETURNING id`, person.Name, person.Surname, person.Patronymic).Scan(&id); err != nil {
+		if err := t.tx.QueryRow(ctx, `INSERT INTO persons (name, surname, patronymic) VALUES ($1, $2, $3) RETURNING id`, person.Name, person.Surname, person.Patronymic).Scan(&id); err != nil {
 			return 0, fmt.Errorf("failed to create person: %w", err)
 		}
 	}
@@ -107,10 +147,10 @@ func (t *Transaction) NewCar(ctx context.Context, car models.Car) error {
 }
 
 func (t *Transaction) FindCars(ctx context.Context, filters models.Car, yearFilterMode string, orderByMode string, limit, offset int) ([]models.Car, error) {
-	sqlFilters := t.filterToSQL(false, filters, yearFilterMode)
+	sqlFilters, args := t.filterToSQL(false, filters, yearFilterMode)
 	sql := fmt.Sprintf("%s ORDER BY cars.year %s LIMIT %d OFFSET %d", sqlFilters, orderByMode, limit, offset)
 
-	rows, err := t.tx.Query(ctx, sql)
+	rows, err := t.tx.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cars: %w", err)
 	}
@@ -142,17 +182,17 @@ func (t *Transaction) FindCars(ctx context.Context, filters models.Car, yearFilt
 }
 
 func (t *Transaction) CountCars(ctx context.Context, filters models.Car, yearFilterMode string) (int, error) {
-	sql := t.filterToSQL(true, filters, yearFilterMode)
+	sql, args := t.filterToSQL(true, filters, yearFilterMode)
 
 	var amount pgtype.Int8
-	if err := t.tx.QueryRow(ctx, sql).Scan(&amount); err != nil {
+	if err := t.tx.QueryRow(ctx, sql, args...).Scan(&amount); err != nil {
 		return 0, fmt.Errorf("failed to count cars: %w", err)
 	}
 
 	return int(amount.Int64), nil
 }
 
-func (t *Transaction) filterToSQL(isCount bool, filter models.Car, yearFilterMode string) string {
+func (t *Transaction) filterToSQL(isCount bool, filter models.Car, yearFilterMode string) (string, []interface{}) {
 	emptyFilter := models.Car{}
 	var sql string
 
@@ -166,44 +206,59 @@ func (t *Transaction) filterToSQL(isCount bool, filter models.Car, yearFilterMod
        persons.patronymic 
 FROM cars JOIN persons ON cars.owner_id = persons.id`
 	} else {
-		sql = `SELECT (*) FROM cars JOIN persons ON cars.owner_id = persons.id`
+		sql = `SELECT COUNT(*) FROM cars JOIN persons ON cars.owner_id = persons.id`
 	}
 
 	if filter == emptyFilter {
-		return sql
+		return sql, nil
 	}
 
 	filters := make([]string, 0, 7)
+	nextArg := 1
+	args := make([]interface{}, 0, 7)
 
 	if filter.RegNum != "" {
-		filters = append(filters, fmt.Sprintf(" cars.reg_num =%s ", filter.RegNum))
+		filters = append(filters, fmt.Sprintf(" cars.reg_num = $%d ", nextArg))
+		nextArg++
+		args = append(args, filter.RegNum)
 	}
 
 	if filter.Mark != "" {
-		filters = append(filters, fmt.Sprintf(" cars.mark =%s ", filter.Mark))
+		filters = append(filters, fmt.Sprintf(" cars.mark = $%d ", nextArg))
+		nextArg++
+		args = append(args, filter.Mark)
 	}
 
 	if filter.Model != "" {
-		filters = append(filters, fmt.Sprintf(" cars.model =%s ", filter.Model))
+		filters = append(filters, fmt.Sprintf(" cars.model = $%d ", nextArg))
+		nextArg++
+		args = append(args, filter.Model)
 	}
 
 	if filter.Year != 0 {
-		filters = append(filters, fmt.Sprintf(" cars.year %s%d ", yearFilterMode, filter.Year))
+		filters = append(filters, fmt.Sprintf(" cars.year %s $%d ", yearFilterMode, nextArg))
+		nextArg++
+		args = append(args, filter.Year)
 	}
 
 	if filter.Owner.Name != "" {
-		filters = append(filters, fmt.Sprintf(" persons.name =%s ", filter.Owner.Name))
+		filters = append(filters, fmt.Sprintf(" persons.name = $%d ", nextArg))
+		nextArg++
+		args = append(args, filter.Owner.Name)
 	}
 
 	if filter.Owner.Surname != "" {
-		filters = append(filters, fmt.Sprintf(" persons.surname =%s ", filter.Owner.Surname))
+		filters = append(filters, fmt.Sprintf(" persons.surname = $%d ", nextArg))
+		nextArg++
+		args = append(args, filter.Owner.Surname)
 	}
 
 	if filter.Owner.Patronymic != "" {
 		if filter.Owner.Patronymic == "-" {
 			filters = append(filters, " persons.patronymic IS NULL")
 		} else {
-			filters = append(filters, fmt.Sprintf(" persons.patronymic =%s ", filter.Owner.Patronymic))
+			filters = append(filters, fmt.Sprintf(" persons.patronymic = $%d ", nextArg))
+			args = append(args, filter.Owner.Patronymic)
 		}
 	}
 
@@ -211,5 +266,5 @@ FROM cars JOIN persons ON cars.owner_id = persons.id`
 		sql += ` WHERE` + strings.Join(filters, "AND")
 	}
 
-	return sql
+	return sql, args
 }

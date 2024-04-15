@@ -38,6 +38,7 @@ func NewServer(cfg config.Server, dbManager *database_manager.PostgresManager, r
 	s := &Server{
 		dbManager:    dbManager,
 		infoReceiver: receiver,
+		logger:       logger,
 	}
 
 	router := bunrouter.New(bunrouter.WithMiddleware(s.middlewareLog)).Compat()

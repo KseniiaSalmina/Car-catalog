@@ -12,34 +12,42 @@ func TestTransaction_filterToSQL(t1 *testing.T) {
 		filter         models.Car
 		yearFilterMode string
 	}
+	type res struct {
+		sql  string
+		args []interface{}
+	}
 	tests := []struct {
 		name string
 		args args
-		want string
+		want res
 	}{
 		{name: "filter by regNum, not count", args: args{isCount: false, filter: models.Car{RegNum: "testREGnum"}, yearFilterMode: ""},
-			want: `SELECT cars.reg_num,
+			want: res{sql: `SELECT cars.reg_num,
        cars.mark, 
        cars.model, 
        cars.year, 
        persons.name, 
        persons.surname, 
        persons.patronymic 
-FROM cars JOIN persons ON cars.owner_id = persons.id WHERE cars.reg_num =testREGnum `},
+FROM cars JOIN persons ON cars.owner_id = persons.id WHERE cars.reg_num = $1 `, args: make([]interface{}, 1)}},
 		{name: "filter by mark, count", args: args{isCount: true, filter: models.Car{Mark: "testMark"}, yearFilterMode: ""},
-			want: `SELECT (*) FROM cars JOIN persons ON cars.owner_id = persons.id WHERE cars.mark =testMark `},
+			want: res{sql: `SELECT COUNT(*) FROM cars JOIN persons ON cars.owner_id = persons.id WHERE cars.mark = $1 `, args: make([]interface{}, 1)}},
 		{name: "filter by no patronymic, count", args: args{isCount: true, filter: models.Car{Owner: models.Person{Patronymic: "-"}}, yearFilterMode: "="},
-			want: `SELECT (*) FROM cars JOIN persons ON cars.owner_id = persons.id WHERE persons.patronymic IS NULL`},
+			want: res{sql: `SELECT COUNT(*) FROM cars JOIN persons ON cars.owner_id = persons.id WHERE persons.patronymic IS NULL`, args: make([]interface{}, 0)}},
 		{name: "filter by year, year filter mode more or equal, count", args: args{isCount: true, filter: models.Car{Year: 2015}, yearFilterMode: ">="},
-			want: `SELECT (*) FROM cars JOIN persons ON cars.owner_id = persons.id WHERE cars.year >=2015 `},
+			want: res{sql: `SELECT COUNT(*) FROM cars JOIN persons ON cars.owner_id = persons.id WHERE cars.year >= $1 `, args: make([]interface{}, 1)}},
 		{name: "a lot of filters, count", args: args{isCount: true, filter: models.Car{RegNum: "testNUM", Model: "testModel", Mark: "testMark", Year: 2022, Owner: models.Person{Name: "Ivan"}}, yearFilterMode: "="},
-			want: `SELECT (*) FROM cars JOIN persons ON cars.owner_id = persons.id WHERE cars.reg_num =testNUM AND cars.mark =testMark AND cars.model =testModel AND cars.year =2022 AND persons.name =Ivan `},
+			want: res{sql: `SELECT COUNT(*) FROM cars JOIN persons ON cars.owner_id = persons.id WHERE cars.reg_num = $1 AND cars.mark = $2 AND cars.model = $3 AND cars.year = $4 AND persons.name = $5 `, args: make([]interface{}, 5)}},
 	}
 	for _, tt := range tests {
 		t1.Run(tt.name, func(t1 *testing.T) {
 			t := &Transaction{}
-			if got := t.filterToSQL(tt.args.isCount, tt.args.filter, tt.args.yearFilterMode); got != tt.want {
-				t1.Errorf("filterToSQL(filter %v, yearFilterMode %s)\n got %v, \nwant %v", tt.args.filter, tt.args.yearFilterMode, got, tt.want)
+			gotSql, gotArgs := t.filterToSQL(tt.args.isCount, tt.args.filter, tt.args.yearFilterMode)
+			if gotSql != tt.want.sql {
+				t1.Errorf("filterToSQL(filter %v, yearFilterMode %s) SQL\n got %v, \nwant %v", tt.args.filter, tt.args.yearFilterMode, gotSql, tt.want)
+			}
+			if len(gotArgs) != len(tt.want.args) {
+				t1.Errorf("filterToSQL(filter %v, yearFilterMode %s) ARGS \n got %v, \nwant %v", tt.args.filter, tt.args.yearFilterMode, gotSql, tt.want)
 			}
 		})
 	}

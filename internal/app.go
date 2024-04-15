@@ -107,6 +107,7 @@ func (a *Application) initServer() {
 
 func (a *Application) Run() {
 	defer a.stop()
+	a.logger.Logger.Debug("application started")
 
 	a.server.Run()
 

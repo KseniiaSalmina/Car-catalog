@@ -21,7 +21,7 @@ import (
 // @Failure 500	{string} string
 // @Router /cars/{regNum} [delete]
 func (s *Server) DeleteCar(w http.ResponseWriter, r *http.Request) {
-	regNum, ok := bunrouter.ParamsFromContext(r.Context()).Get("id")
+	regNum, ok := bunrouter.ParamsFromContext(r.Context()).Get("regNum")
 	if !ok {
 		http.Error(w, "registration number of the car is required", http.StatusBadRequest)
 		return
@@ -43,7 +43,7 @@ func (s *Server) DeleteCar(w http.ResponseWriter, r *http.Request) {
 // @Tags cars
 // @Description get info about cars from outsider service and put it to the database
 // @Accept json
-// @Param regNums body []models.Car true "array of regNums"
+// @Param regNums body []string true "array of regNums"
 // @Success 200
 // @Failure 400 {string} string
 // @Failure 500	{string} string
@@ -83,9 +83,9 @@ func (s *Server) PostCars(w http.ResponseWriter, r *http.Request) {
 // @Success 200
 // @Failure 400 {string} string
 // @Failure 500	{string} string
-// @Router /cars/:regNum [patch]
+// @Router /cars/{regNum} [patch]
 func (s *Server) PatchCar(w http.ResponseWriter, r *http.Request) {
-	regNum, ok := bunrouter.ParamsFromContext(r.Context()).Get("id")
+	regNum, ok := bunrouter.ParamsFromContext(r.Context()).Get("regNum")
 	if !ok {
 		http.Error(w, "registration number of the car is required", http.StatusBadRequest)
 		return

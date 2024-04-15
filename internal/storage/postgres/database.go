@@ -30,9 +30,9 @@ func NewDB(ctx context.Context, cfg config.Postgres) (*DB, error) {
 
 	database := &DB{db: db}
 
-	if err := database.migrate(cfg.Migration); err != nil {
+	/*if err := database.migrate(cfg.Migration); err != nil {
 		return nil, fmt.Errorf("failed to setup database: %w", err)
-	}
+	}*/
 
 	return database, nil
 }
@@ -45,7 +45,7 @@ func (db *DB) migrate(embedMigration embed.FS) error {
 	}
 
 	d := stdlib.OpenDBFromPool(db.db)
-	if err := goose.Up(d, "migrations"); err != nil {
+	if err := goose.Up(d, "schema"); err != nil {
 		return fmt.Errorf("failed to migrate: %w", err)
 	}
 

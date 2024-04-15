@@ -14,7 +14,7 @@ import (
 
 var cfg config.Application
 
-//go:embed schema/*.sql
+//go:embed schema/20240414213620_init.sql
 var embedMigrations embed.FS
 
 func init() {
