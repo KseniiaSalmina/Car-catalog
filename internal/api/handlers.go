@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/uptrace/bunrouter"
@@ -115,8 +116,14 @@ func (s *Server) PatchCar(w http.ResponseWriter, r *http.Request) {
 // @Param page query int false "page number"
 // @Param limit query int false "limit records by page"
 // @Param yearFilterMode query string false "can be =, >=, <=. By default =" Enums(=, >=, <=)
+// @Param regNum query string false
+// @Param mark query string false
+// @Param model query string false
+// @Param year query int false
+// @Param ownerName query string false
+// @Param ownerSurname query string false
+// @Param ownerPatronymic query string false "to search for car owners without a patronymic, the patronymic field must contain the string "-""
 // @Param orderByMode query string false "relating to the car year. Can be ASC or DESC, by default DESC" Enums(ASC, DESC)
-// @Param filters body models.Car true "empty fields do not affect the result. To search for car owners without a patronymic, the patronymic field must contain the string "-""
 // @Success 200 {object} models.CarsPage
 // @Success 204
 // @Failure 400 {string} string
@@ -148,11 +155,22 @@ func (s *Server) GetCars(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var car models.Car
-	defer r.Body.Close()
-	if err := json.NewDecoder(r.Body).Decode(&car); err != nil {
-		http.Error(w, fmt.Sprintf("incorrect car data: %s", err.Error()), http.StatusBadRequest)
+
+	car.RegNum = r.FormValue("regNum")
+	car.Mark = r.FormValue("mark")
+	car.Model = r.FormValue("model")
+
+	yearStr := r.FormValue("year")
+	year, err := strconv.Atoi(yearStr)
+	if err != nil {
+		http.Error(w, "incorrect year", http.StatusBadRequest)
 		return
 	}
+	car.Year = year
+
+	car.Owner.Name = r.FormValue("ownerName")
+	car.Owner.Surname = r.FormValue("ownerSurname")
+	car.Owner.Patronymic = r.FormValue("ownerPatronymic")
 
 	carsPage, err := s.dbManager.GetCars(r.Context(), car, yearFilterMode, orderByMode, page.limit, page.offset)
 	if err != nil {

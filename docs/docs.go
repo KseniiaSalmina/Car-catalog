@@ -114,55 +114,8 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.Car"
+                                "type": "string"
                             }
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/cars/:regNum": {
-            "patch": {
-                "description": "update car info by accepted json",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "cars"
-                ],
-                "summary": "Patch car",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "registration number of the car",
-                        "name": "regNum",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "car with updated info",
-                        "name": "car",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Car"
                         }
                     }
                 ],
@@ -199,6 +152,51 @@ const docTemplate = `{
                         "name": "regNum",
                         "in": "path",
                         "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "update car info by accepted json",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cars"
+                ],
+                "summary": "Patch car",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "registration number of the car",
+                        "name": "regNum",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "car with updated info",
+                        "name": "car",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Car"
+                        }
                     }
                 ],
                 "responses": {

@@ -110,7 +110,7 @@ paths:
         required: true
         schema:
           items:
-            $ref: '#/definitions/models.Car'
+            type: string
           type: array
       responses:
         "200":
@@ -126,7 +126,29 @@ paths:
       summary: Post cars
       tags:
       - cars
-  /cars/:regNum:
+  /cars/{regNum}:
+    delete:
+      description: delete car by its registration number
+      parameters:
+      - description: registration number of the car
+        in: path
+        name: regNum
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Delete car
+      tags:
+      - cars
     patch:
       consumes:
       - application/json
@@ -155,29 +177,6 @@ paths:
           schema:
             type: string
       summary: Patch car
-      tags:
-      - cars
-  /cars/{regNum}:
-    delete:
-      description: delete car by its registration number
-      parameters:
-      - description: registration number of the car
-        in: path
-        name: regNum
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-        "400":
-          description: Bad Request
-          schema:
-            type: string
-        "500":
-          description: Internal Server Error
-          schema:
-            type: string
-      summary: Delete car
       tags:
       - cars
 swagger: "2.0"

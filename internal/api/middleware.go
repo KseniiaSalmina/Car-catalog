@@ -17,7 +17,6 @@ func (s *Server) middlewareLog(next bunrouter.HandlerFunc) bunrouter.HandlerFunc
 				"request_ip":     strings.TrimPrefix(strings.Split(req.RemoteAddr, ":")[1], "["),
 				"request_method": req.Method,
 				"request_url":    req.URL,
-				"code":           w.Header().Get("Code"),
 			}).Debug("http request served")
 		}()
 
