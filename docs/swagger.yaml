@@ -1,0 +1,183 @@
+basePath: /
+definitions:
+  models.Car:
+    properties:
+      mark:
+        type: string
+      model:
+        type: string
+      owner:
+        $ref: '#/definitions/models.Person'
+      regNum:
+        type: string
+      year:
+        type: integer
+    type: object
+  models.CarsPage:
+    properties:
+      cars:
+        items:
+          $ref: '#/definitions/models.Car'
+        type: array
+      limit:
+        type: integer
+      page_number:
+        type: integer
+      pages_amount:
+        type: integer
+    type: object
+  models.Person:
+    properties:
+      name:
+        type: string
+      patronymic:
+        type: string
+      surname:
+        type: string
+    type: object
+host: localhost:8088
+info:
+  contact: {}
+  description: microservice for storing cars info
+  title: Car catalog
+  version: 1.0.0
+paths:
+  /cars:
+    get:
+      consumes:
+      - application/json
+      description: get cars by filters. Filters are accepted in json format as a car
+        structure
+      parameters:
+      - description: page number
+        in: query
+        name: page
+        type: integer
+      - description: limit records by page
+        in: query
+        name: limit
+        type: integer
+      - description: can be =, >=, <=. By default =
+        enum:
+        - =
+        - '>='
+        - <=
+        in: query
+        name: yearFilterMode
+        type: string
+      - description: relating to the car year. Can be ASC or DESC, by default DESC
+        enum:
+        - ASC
+        - DESC
+        in: query
+        name: orderByMode
+        type: string
+      - description: 'empty fields do not affect the result. To search for car owners
+          without a patronymic, the patronymic field must contain the string '
+        in: body
+        name: filters
+        required: true
+        schema:
+          $ref: '#/definitions/models.Car'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.CarsPage'
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get cars
+      tags:
+      - cars
+    post:
+      consumes:
+      - application/json
+      description: get info about cars from outsider service and put it to the database
+      parameters:
+      - description: array of regNums
+        in: body
+        name: regNums
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/models.Car'
+          type: array
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Post cars
+      tags:
+      - cars
+  /cars/:regNum:
+    patch:
+      consumes:
+      - application/json
+      description: update car info by accepted json
+      parameters:
+      - description: registration number of the car
+        in: path
+        name: regNum
+        required: true
+        type: string
+      - description: car with updated info
+        in: body
+        name: car
+        required: true
+        schema:
+          $ref: '#/definitions/models.Car'
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Patch car
+      tags:
+      - cars
+  /cars/{regNum}:
+    delete:
+      description: delete car by its registration number
+      parameters:
+      - description: registration number of the car
+        in: path
+        name: regNum
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Delete car
+      tags:
+      - cars
+swagger: "2.0"

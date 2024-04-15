@@ -7,6 +7,7 @@ import (
 	"github.com/caarlos0/env/v6"
 	"github.com/joho/godotenv"
 
+	_ "github.com/KseniiaSalmina/Car-catalog/docs"
 	app "github.com/KseniiaSalmina/Car-catalog/internal"
 	"github.com/KseniiaSalmina/Car-catalog/internal/config"
 )
@@ -24,6 +25,11 @@ func init() {
 	cfg.Postgres.Migration = embedMigrations
 }
 
+// @title Car catalog
+// @version 1.0.0
+// @description microservice for storing cars info
+// @host localhost:8088
+// @BasePath /
 func main() {
 	application, err := app.NewApplication(cfg)
 	if err != nil {

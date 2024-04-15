@@ -1,6 +1,6 @@
 package models
 
-type CarPage struct {
+type CarsPage struct {
 	Cars        []Car `json:"cars"`
 	PageNo      int   `json:"page_number"`
 	Limit       int   `json:"limit"`

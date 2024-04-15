@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"net/http"
 	"time"
 
@@ -26,7 +27,7 @@ type dbManager interface {
 	DeleteCar(ctx context.Context, regNum string) error
 	ChangeCar(ctx context.Context, car models.Car) error
 	AddCars(ctx context.Context, cars []models.Car) error
-	GetCars(ctx context.Context, filters models.Car, yearFilterMode string, orderByMode string, limit, offset int) (*models.CarPage, error)
+	GetCars(ctx context.Context, filters models.Car, yearFilterMode string, orderByMode string, limit, offset int) (*models.CarsPage, error)
 }
 
 type infoReceiver interface {
@@ -44,6 +45,9 @@ func NewServer(cfg config.Server, dbManager *database_manager.PostgresManager, r
 	router.POST("/cars", s.PostCars)
 	router.PATCH("/cars/:regNum", s.PatchCar)
 	router.DELETE("/cars/:regNum", s.DeleteCar)
+
+	swagHandler := httpSwagger.Handler(httpSwagger.URL("/swagger/doc.json"))
+	router.GET("/swagger/*path", swagHandler)
 
 	s.httpServer = &http.Server{
 		Addr:         cfg.Listen,

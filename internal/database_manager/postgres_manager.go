@@ -72,7 +72,7 @@ func (pm *PostgresManager) AddCars(ctx context.Context, cars []models.Car) error
 	return nil
 }
 
-func (pm *PostgresManager) GetCars(ctx context.Context, filters models.Car, yearFilterMode string, orderByMode string, limit, offset int) (*models.CarPage, error) {
+func (pm *PostgresManager) GetCars(ctx context.Context, filters models.Car, yearFilterMode string, orderByMode string, limit, offset int) (*models.CarsPage, error) {
 	tx, err := pm.db.NewTransaction(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cars: transaction error: %w", err)
@@ -89,6 +89,8 @@ func (pm *PostgresManager) GetCars(ctx context.Context, filters models.Car, year
 		return nil, fmt.Errorf("failed to count cars: %w", err)
 	}
 
+	_ = tx.Commit(ctx)
+
 	var pagesAmount int
 	if rowsAmount%limit != 0 {
 		pagesAmount = rowsAmount/limit + 1
@@ -96,7 +98,7 @@ func (pm *PostgresManager) GetCars(ctx context.Context, filters models.Car, year
 		pagesAmount = rowsAmount / limit
 	}
 
-	resultPage := models.CarPage{
+	resultPage := models.CarsPage{
 		Cars:        cars,
 		Limit:       limit,
 		PagesAmount: pagesAmount,
