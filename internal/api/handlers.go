@@ -116,12 +116,12 @@ func (s *Server) PatchCar(w http.ResponseWriter, r *http.Request) {
 // @Param page query int false "page number"
 // @Param limit query int false "limit records by page"
 // @Param yearFilterMode query string false "can be =, >=, <=. By default =" Enums(=, >=, <=)
-// @Param regNum query string false
-// @Param mark query string false
-// @Param model query string false
-// @Param year query int false
-// @Param ownerName query string false
-// @Param ownerSurname query string false
+// @Param regNum query string false "registration number of the car"
+// @Param mark query string false "mark of the car"
+// @Param model query string false "model of the car"
+// @Param year query int false "year of the car"
+// @Param ownerName query string false "name of owner of the car"
+// @Param ownerSurname query string false "surname of owner of the car"
 // @Param ownerPatronymic query string false "to search for car owners without a patronymic, the patronymic field must contain the string "-""
 // @Param orderByMode query string false "relating to the car year. Can be ASC or DESC, by default DESC" Enums(ASC, DESC)
 // @Success 200 {object} models.CarsPage

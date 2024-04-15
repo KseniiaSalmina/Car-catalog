@@ -53,6 +53,48 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "registration number of the car",
+                        "name": "regNum",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "mark of the car",
+                        "name": "mark",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "model of the car",
+                        "name": "model",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "year of the car",
+                        "name": "year",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "name of owner of the car",
+                        "name": "ownerName",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "surname of owner of the car",
+                        "name": "ownerSurname",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "to search for car owners without a patronymic, the patronymic field must contain the string ",
+                        "name": "ownerPatronymic",
+                        "in": "query"
+                    },
+                    {
                         "enum": [
                             "ASC",
                             "DESC"
@@ -61,15 +103,6 @@ const docTemplate = `{
                         "description": "relating to the car year. Can be ASC or DESC, by default DESC",
                         "name": "orderByMode",
                         "in": "query"
-                    },
-                    {
-                        "description": "empty fields do not affect the result. To search for car owners without a patronymic, the patronymic field must contain the string ",
-                        "name": "filters",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Car"
-                        }
                     }
                 ],
                 "responses": {

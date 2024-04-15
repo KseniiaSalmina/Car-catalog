@@ -65,6 +65,35 @@ paths:
         in: query
         name: yearFilterMode
         type: string
+      - description: registration number of the car
+        in: query
+        name: regNum
+        type: string
+      - description: mark of the car
+        in: query
+        name: mark
+        type: string
+      - description: model of the car
+        in: query
+        name: model
+        type: string
+      - description: year of the car
+        in: query
+        name: year
+        type: integer
+      - description: name of owner of the car
+        in: query
+        name: ownerName
+        type: string
+      - description: surname of owner of the car
+        in: query
+        name: ownerSurname
+        type: string
+      - description: 'to search for car owners without a patronymic, the patronymic
+          field must contain the string '
+        in: query
+        name: ownerPatronymic
+        type: string
       - description: relating to the car year. Can be ASC or DESC, by default DESC
         enum:
         - ASC
@@ -72,13 +101,6 @@ paths:
         in: query
         name: orderByMode
         type: string
-      - description: 'empty fields do not affect the result. To search for car owners
-          without a patronymic, the patronymic field must contain the string '
-        in: body
-        name: filters
-        required: true
-        schema:
-          $ref: '#/definitions/models.Car'
       produces:
       - application/json
       responses:
