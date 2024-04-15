@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"net/http"
 	"time"
@@ -12,7 +13,6 @@ import (
 	"github.com/KseniiaSalmina/Car-catalog/internal/config"
 	"github.com/KseniiaSalmina/Car-catalog/internal/database_manager"
 	"github.com/KseniiaSalmina/Car-catalog/internal/info_receiver"
-	"github.com/KseniiaSalmina/Car-catalog/internal/logger"
 	"github.com/KseniiaSalmina/Car-catalog/internal/models"
 )
 
@@ -20,7 +20,7 @@ type Server struct {
 	dbManager    dbManager
 	infoReceiver infoReceiver
 	httpServer   *http.Server
-	logger       *logger.Logger
+	logger       *logrus.Logger
 }
 
 type dbManager interface {
@@ -34,7 +34,7 @@ type infoReceiver interface {
 	GetCarInfo(ctx context.Context, regNum string) (*models.Car, error)
 }
 
-func NewServer(cfg config.Server, dbManager *database_manager.PostgresManager, receiver *info_receiver.Receiver, logger *logger.Logger) *Server {
+func NewServer(cfg config.Server, dbManager *database_manager.PostgresManager, receiver *info_receiver.Receiver, logger *logrus.Logger) *Server {
 	s := &Server{
 		dbManager:    dbManager,
 		infoReceiver: receiver,
@@ -62,11 +62,11 @@ func NewServer(cfg config.Server, dbManager *database_manager.PostgresManager, r
 }
 
 func (s *Server) Run() {
-	s.logger.Logger.Info("server started")
+	s.logger.Info("server started")
 
 	go func() {
 		err := s.httpServer.ListenAndServe()
-		s.logger.Logger.Info(fmt.Sprintf("http server stopped: %s", err.Error()))
+		s.logger.Info(fmt.Sprintf("http server stopped: %s", err.Error()))
 	}()
 }
 

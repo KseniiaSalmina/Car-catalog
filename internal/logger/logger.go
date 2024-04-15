@@ -8,11 +8,7 @@ import (
 	"github.com/KseniiaSalmina/Car-catalog/internal/config"
 )
 
-type Logger struct {
-	Logger *logrus.Logger
-}
-
-func NewLogger(cfg config.Logger) (*Logger, error) {
+func NewLogger(cfg config.Logger) (*logrus.Logger, error) {
 	l := logrus.New()
 
 	lvl, err := logrus.ParseLevel(cfg.LogLevel)
@@ -22,5 +18,5 @@ func NewLogger(cfg config.Logger) (*Logger, error) {
 
 	l.SetLevel(lvl)
 
-	return &Logger{Logger: l}, nil
+	return l, nil
 }
